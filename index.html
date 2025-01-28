@@ -15,6 +15,7 @@
       padding: 0;
       font-family: 'Open Sans', sans-serif;
       color: #fff;
+      overflow: hidden;
     }
 
     body {
@@ -38,12 +39,6 @@
       font-weight: bold;
       text-transform: uppercase;
       text-align: center;
-    }
-
-    #battery-info {
-      margin-top: 20px;
-      font-size: 0.8em;
-      font-weight: normal;
     }
 
     main {
@@ -122,37 +117,79 @@
       width: 100%;
       height: 100%;
     }
+
+    /* Moving loading lines */
+    .line {
+      position: absolute;
+      width: 100%;
+      height: 4px;
+      background: #f00;
+      animation: moveLine 4s linear infinite;
+    }
+
+    .line:nth-child(1) {
+      top: 10%;
+    }
+
+    .line:nth-child(2) {
+      top: 50%;
+    }
+
+    .line:nth-child(3) {
+      top: 90%;
+    }
+
+    @keyframes moveLine {
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(100%);
+      }
+    }
     </style>
 
     <script>
-      window.addEventListener("DOMContentLoaded", async () => {
-        // Greeting and loading message
-        document.getElementById("preloader").innerHTML = `
-          Hey user, welcome to WATSON-FOURPENCE WEBSITE.<br>
-          Wait, it's loading...
-        `;
+      let rainScene, rainCamera, rainRenderer;
 
-        // Preloader logic
-        setTimeout(async () => {
-          // Check battery level
-          const battery = await navigator.getBattery();
-          const batteryLevel = Math.round(battery.level * 100);
+      function createRainEffect() {
+        rainScene = new THREE.Scene();
+        rainCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+        rainCamera.position.z = 5;
 
-          document.getElementById("preloader").innerHTML = `
-            Battery Level: ${batteryLevel}%<br>
-            You're approved to get access on my website.
-          `;
+        rainRenderer = new THREE.WebGLRenderer();
+        rainRenderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(rainRenderer.domElement);
 
-          // Hide preloader after showing battery info
-          setTimeout(() => {
-            document.getElementById("preloader").style.display = "none";
-            const main = document.querySelector("main");
-            main.style.opacity = 1;
-            main.style.filter = "blur(0px)";
-          }, 3000);
+        let rainGeometry = new THREE.Geometry();
+        for (let i = 0; i < 1000; i++) {
+          let raindrop = new THREE.Vector3(
+            Math.random() * 400 - 200,
+            Math.random() * 400 - 200,
+            Math.random() * 400 - 200
+          );
+          rainGeometry.vertices.push(raindrop);
+        }
 
-        }, 3000);
+        let rainMaterial = new THREE.PointsMaterial({ color: 0x00aaff, size: 0.1 });
+        let rain = new THREE.Points(rainGeometry, rainMaterial);
+        rainScene.add(rain);
 
+        function animateRain() {
+          requestAnimationFrame(animateRain);
+          rainGeometry.vertices.forEach(function (raindrop) {
+            raindrop.y -= 1;
+            if (raindrop.y < -200) {
+              raindrop.y = 200;
+            }
+          });
+          rainGeometry.verticesNeedUpdate = true;
+          rainRenderer.render(rainScene, rainCamera);
+        }
+        animateRain();
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
         VANTA.BIRDS({
           el: "#vanta",
           mouseControls: true,
@@ -170,13 +207,23 @@
           cohesion: 5.0,
           quantity: 2.0,
         });
+
+        createRainEffect();
+
+        setTimeout(() => {
+          const main = document.querySelector("main");
+          main.style.opacity = 1;
+          main.style.filter = "blur(0px)";
+        }, 1000);
       });
     </script>
 
   </head>
   <body>
-    <div id="preloader"></div>
     <div id="vanta"></div>
+    <div class="line"></div>
+    <div class="line"></div>
+    <div class="line"></div>
     <main>
       <header>
         <img src="./famofc.jpg" alt="Anurag's GitHub avatar" />
